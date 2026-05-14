@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Comicteca">
+<meta name="theme-color" content="#0a0a0f">
+<title>Comicteca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1c1c28;
+  --accent: #e8c547;
+  --accent2: #ff6b35;
+  --text: #f0f0f0;
+  --text-dim: #888;
+  --radius: 12px;
+  --reader-bg: #000;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+/* ── SCREENS ── */
+.screen { display:none; width:100%; min-height:100vh; }
+.screen.active { display:flex; flex-direction:column; }
+
+/* ── TOP BAR ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  padding-top: calc(16px + env(safe-area-inset-top));
+  background: var(--surface);
+  border-bottom: 1px solid #ffffff0d;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--accent);
+  text-shadow: 0 0 20px #e8c54755;
+}
+
+.topbar-actions { display:flex; gap:10px; }
+
+.icon-btn {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  border: none;
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items:center; justify-content:center;
+  transition: background .15s;
+}
+.icon-btn:active { background: var(--accent); color:#000; }
+
+/* ── LIBRARY GRID ── */
+#library-screen { background: var(--bg); }
+
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  padding: 20px 20px 10px;
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px;
+  text-align: center;
+}
+
+.empty-icon { font-size: 64px; opacity:.4; }
+.empty-state h2 { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:2px; color:var(--text-dim); }
+.empty-state p { color:var(--text-dim); font-size:14px; line-height:1.6; }
+
+.add-btn {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px 28px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  display: flex; align-items:center; gap:8px;
+  transition: transform .1s, box-shadow .1s;
+  box-shadow: 0 4px 20px #e8c54740;
+}
+.add-btn:active { transform: scale(.97); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 0 16px 100px;
+}
+
+.comic-card {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface2);
+  cursor: pointer;
+  aspect-ratio: 2/3;
+  transition: transform .15s;
+}
+.comic-card:active { transform: scale(.96); }
+
+.comic-thumb {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.comic-thumb-placeholder {
+  width:100%; height:100%;
+  background: linear-gradient(135deg, var(--surface2), #2a2a3a);
+  display:flex; align-items:center; justify-content:center;
+  font-size: 36px;
+}
+
+.comic-label {
+  position: absolute;
+  bottom: 0; left:0; right:0;
+  background: linear-gradient(transparent, rgba(0,0,0,.85));
+  padding: 20px 8px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.comic-progress {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 0 2px 0 0;
+}
+
+.comic-badge {
+  position: absolute;
+  top: 6px; right: 6px;
+  background: var(--accent2);
+  color:#fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing:.5px;
+}
+
+/* long press menu */
+.ctx-menu {
+  position: fixed;
+  z-index: 999;
+  background: var(--surface);
+  border: 1px solid #ffffff15;
+  border-radius: 14px;
+  padding: 6px;
+  min-width: 160px;
+  box-shadow: 0 8px 32px #00000080;
+  display:none;
+}
+.ctx-menu.show { display:block; }
+.ctx-item {
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  display:flex; gap:10px; align-items:center;
+}
+.ctx-item:hover, .ctx-item:active { background: var(--surface2); }
+.ctx-item.danger { color: #ff4444; }
+
+/* ── FAB ── */
+.fab {
+  position: fixed;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  right: 20px;
+  width: 58px; height: 58px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  display: flex; align-items:center; justify-content:center;
+  box-shadow: 0 4px 24px #e8c54750;
+  z-index: 200;
+  transition: transform .1s;
+}
+.fab:active { transform: scale(.93); }
+
+/* ── READER ── */
+#reader-screen {
+  background: var(--reader-bg);
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  flex-direction: column;
+}
+
+.reader-topbar {
+  position: absolute;
+  top: 0; left:0; right:0;
+  padding: 12px 16px;
+  padding-top: calc(12px + env(safe-area-inset-top));
+  background: linear-gradient(#000000cc, transparent);
+  display: flex;
+  align-items:center;
+  gap: 12px;
+  z-index: 10;
+  transition: opacity .3s;
+}
+.reader-topbar.hidden { opacity:0; pointer-events:none; }
+
+.back-btn {
+  background: #ffffff15;
+  border: none;
+  color: #fff;
+  width:38px; height:38px;
+  border-radius:10px;
+  font-size:18px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+}
+
+.reader-title {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:17px;
+  letter-spacing:1.5px;
+  color:#fff;
+  flex:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.page-counter {
+  font-size:12px;
+  color:#ffffff80;
+  white-space:nowrap;
+}
+
+/* Viewer */
+.reader-viewport {
+  flex:1;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+}
+
+#page-canvas {
+  position: absolute;
+  top:50%;
+  left:50%;
+  transform: translate(-50%,-50%);
+  max-width:100%;
+  max-height:100%;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+.reader-bottombar {
+  position: absolute;
+  bottom:0; left:0; right:0;
+  padding: 12px 20px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, #000000cc);
+  z-index: 10;
+  transition: opacity .3s;
+}
+.reader-bottombar.hidden { opacity:0; pointer-events:none; }
+
+.page-slider {
+  -webkit-appearance: none;
+  width:100%;
+  height:4px;
+  border-radius:2px;
+  background: #ffffff20;
+  outline:none;
+  cursor:pointer;
+}
+.page-slider::-webkit-slider-thumb {
+  -webkit-appearance:none;
+  width:20px; height:20px;
+  border-radius:50%;
+  background: var(--accent);
+  box-shadow: 0 2px 8px #00000060;
+}
+
+/* ── LOADING ── */
+.loading-overlay {
+  position:fixed;
+  inset:0;
+  background:#000000cc;
+  z-index:999;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:16px;
+  display:none;
+}
+.loading-overlay.show { display:flex; }
+.spinner {
+  width:40px; height:40px;
+  border:3px solid #ffffff20;
+  border-top-color: var(--accent);
+  border-radius:50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-text { color:var(--text-dim); font-size:14px; }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed;
+  bottom: calc(90px + env(safe-area-inset-bottom));
+  left:50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface);
+  color: var(--text);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size:13px;
+  border:1px solid #ffffff15;
+  opacity:0;
+  transition: opacity .3s, transform .3s;
+  z-index:9999;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── DRIVE MODAL ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000000bb;
+  z-index: 800;
+  display: none;
+  align-items: flex-end;
+}
+.modal-overlay.show { display: flex; }
+.modal-sheet {
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  padding: 20px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.modal-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--accent);
+}
+.modal-sub { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+.drive-input {
+  background: var(--surface2);
+  border: 1px solid #ffffff15;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  width: 100%;
+  outline: none;
+}
+.drive-input::placeholder { color: var(--text-dim); }
+.drive-input:focus { border-color: var(--accent); }
+.modal-btn {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  width: 100%;
+}
+.modal-btn:active { opacity: .85; }
+.modal-cancel {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px;
+  text-align: center;
+  width: 100%;
+}
+.drive-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  line-height: 1.7;
+}
+
+.direction-badge {
+  font-size:10px;
+  color: var(--text-dim);
+  text-align:center;
+  padding: 4px 0 0;
+  letter-spacing:1px;
+}
+
+/* Tap zones (invisible) */
+.tap-left, .tap-right, .tap-center {
+  position:absolute;
+  top:0; bottom:0;
+  z-index:5;
+}
+.tap-left { left:0; width:25%; }
+.tap-right { right:0; width:25%; }
+.tap-center { left:25%; right:25%; }
+</style>
+</head>
+<body>
+
+<!-- LIBRARY -->
+<div id="library-screen" class="screen active">
+  <div class="topbar">
+    <div class="logo">Comicteca</div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="drive-btn" title="Google Drive">▲</button>
+      <button class="icon-btn" id="sort-btn" title="Ordenar">⇅</button>
+      <button class="icon-btn" id="search-btn" title="Buscar">🔍</button>
+    </div>
+  </div>
+
+  <div id="library-content" style="flex:1;overflow-y:auto;"></div>
+
+  <button class="fab" id="add-fab">＋</button>
+</div>
+
+<!-- READER -->
+<div id="reader-screen" class="screen">
+  <div class="reader-topbar" id="reader-topbar">
+    <button class="back-btn" id="back-btn">←</button>
+    <div class="reader-title" id="reader-title">—</div>
+    <div class="page-counter" id="page-counter">0 / 0</div>
+  </div>
+
+  <div class="reader-viewport" id="reader-viewport">
+    <canvas id="page-canvas"></canvas>
+    <div class="tap-left" id="tap-left"></div>
+    <div class="tap-center" id="tap-center"></div>
+    <div class="tap-right" id="tap-right"></div>
+  </div>
+
+  <div class="reader-bottombar" id="reader-bottombar">
+    <input type="range" class="page-slider" id="page-slider" min="0" value="0">
+    <div class="direction-badge" id="dir-badge">← TOCA LOS BORDES PARA NAVEGAR →</div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-item" id="ctx-read">📖 Leer</div>
+  <div class="ctx-item" id="ctx-info">ℹ️ Info</div>
+  <div class="ctx-item danger" id="ctx-delete">🗑 Eliminar</div>
+</div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Procesando…</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Drive Modal -->
+<div class="modal-overlay" id="drive-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">📁 Importar desde Drive</div>
+    <div class="modal-sub">Pega el enlace de Google Drive de tu cómic (CBZ, PDF, ZIP).</div>
+    <div class="drive-hint">
+      En Drive: clic derecho en el archivo → <b>Compartir</b> → <b>Cualquiera con el enlace</b> → copiar URL
+    </div>
+    <input class="drive-input" id="drive-url" type="url" placeholder="https://drive.google.com/file/d/…">
+    <button class="modal-btn" id="drive-import-btn">IMPORTAR</button>
+    <button class="modal-cancel" id="drive-cancel">Cancelar</button>
+  </div>
+</div>
+
+
+<input type="file" id="file-input" accept=".cbr,.cbz,.cb7,.pdf,.zip,.rar" multiple style="display:none">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// ── CONFIG ──
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const DB_NAME = 'ComictecaDB';
+const DB_VER  = 2;
+let db;
+
+// ── STATE ──
+let library  = [];         // [{id, name, format, size, thumb, pages, currentPage, dateAdded}]
+let readerPages = [];      // array of blob URLs or PDF page refs
+let currentComic = null;
+let currentPage  = 0;
+let totalPages   = 0;
+let pdfDoc       = null;
+let barsVisible  = true;
+let barsTimer    = null;
+let ctxTarget    = null;
+let sortMode     = 'dateAdded'; // dateAdded | name | progress
+
+// ── DB ──
+function openDB() {
+  return new Promise((res,rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('comics')) {
+        d.createObjectStore('comics', {keyPath:'id'});
+      }
+      if (!d.objectStoreNames.contains('files')) {
+        d.createObjectStore('files', {keyPath:'id'});
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror   = () => rej(req.error);
+  });
+}
+
+function dbGet(store, key) {
+  return new Promise((res,rej) => {
+    const tx = db.transaction(store,'readonly');
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = () => res(req.result);
+    req.onerror   = () => rej(req.error);
+  });
+}
+
+function dbPut(store, obj) {
+  return new Promise((res,rej) => {
+    const tx = db.transaction(store,'readwrite');
+    const req = tx.objectStore(store).put(obj);
+    req.onsuccess = () => res();
+    req.onerror   = () => rej(req.error);
+  });
+}
+
+function dbDelete(store, key) {
+  return new Promise((res,rej) => {
+    const tx = db.transaction(store,'readwrite');
+    const req = tx.objectStore(store).delete(key);
+    req.onsuccess = () => res();
+    req.onerror   = () => rej(req.error);
+  });
+}
+
+function dbGetAll(store) {
+  return new Promise((res,rej) => {
+    const tx = db.transaction(store,'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => res(req.result);
+    req.onerror   = () => rej(req.error);
+  });
+}
+
+// ── INIT ──
+async function init() {
+  await openDB();
+  library = await dbGetAll('comics');
+  renderLibrary();
+}
+
+// ── LIBRARY ──
+function renderLibrary() {
+  const content = document.getElementById('library-content');
+
+  if (!library.length) {
+    content.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📚</div>
+        <h2>Tu Comicteca está vacía</h2>
+        <p>Agrega cómics en formato<br>CBR · CBZ · PDF · ZIP</p>
+        <button class="add-btn" onclick="document.getElementById('file-input').click()">＋ Agregar Cómics</button>
+      </div>`;
+    return;
+  }
+
+  const sorted = [...library].sort((a,b) => {
+    if (sortMode === 'name') return a.name.localeCompare(b.name);
+    if (sortMode === 'progress') return (b.currentPage/b.pages||0) - (a.currentPage/a.pages||0);
+    return b.dateAdded - a.dateAdded;
+  });
+
+  content.innerHTML = `
+    <div class="section-title">COLECCIÓN · ${library.length} TÍTULO${library.length!==1?'S':''}</div>
+    <div class="grid" id="grid"></div>`;
+
+  const grid = document.getElementById('grid');
+  sorted.forEach(comic => {
+    const pct = comic.pages ? Math.round((comic.currentPage||0)/comic.pages*100) : 0;
+    const card = document.createElement('div');
+    card.className = 'comic-card';
+    card.dataset.id = comic.id;
+
+    let thumbHTML;
+    if (comic.thumb) {
+      thumbHTML = `<img class="comic-thumb" src="${comic.thumb}" loading="lazy">`;
+    } else {
+      const emoji = comic.format === 'pdf' ? '📄' : '📔';
+      thumbHTML = `<div class="comic-thumb-placeholder">${emoji}</div>`;
+    }
+
+    card.innerHTML = `
+      ${thumbHTML}
+      ${pct > 0 && pct < 100 ? `<div class="comic-progress" style="width:${pct}%"></div>` : ''}
+      ${pct === 100 ? `<div class="comic-badge">✓</div>` : ''}
+      <div class="comic-label">${comic.name}</div>`;
+
+    card.addEventListener('click', () => openComic(comic.id));
+    card.addEventListener('contextmenu', e => { e.preventDefault(); showCtxMenu(e, comic.id); });
+
+    // Long press
+    let lt;
+    card.addEventListener('touchstart', e => { lt = setTimeout(() => showCtxMenu(e.touches[0], comic.id), 500); }, {passive:true});
+    card.addEventListener('touchend',   () => clearTimeout(lt));
+    card.addEventListener('touchmove',  () => clearTimeout(lt));
+
+    grid.appendChild(card);
+  });
+}
+
+// ── CONTEXT MENU ──
+function showCtxMenu(e, comicId) {
+  ctxTarget = comicId;
+  const menu = document.getElementById('ctx-menu');
+  menu.style.left = Math.min(e.clientX, window.innerWidth-180) + 'px';
+  menu.style.top  = Math.min(e.clientY, window.innerHeight-160) + 'px';
+  menu.classList.add('show');
+}
+
+document.addEventListener('click', () => document.getElementById('ctx-menu').classList.remove('show'));
+
+document.getElementById('ctx-read').onclick = () => { if(ctxTarget) openComic(ctxTarget); };
+document.getElementById('ctx-info').onclick = () => {
+  const c = library.find(x=>x.id===ctxTarget);
+  if(c) toast(`${c.name}\n${c.pages} páginas · ${(c.size/1024/1024).toFixed(1)}MB`);
+};
+document.getElementById('ctx-delete').onclick = async () => {
+  if(!ctxTarget) return;
+  const c = library.find(x=>x.id===ctxTarget);
+  if(!c) return;
+  if(!confirm(`Eliminar "${c.name}"?`)) return;
+  await dbDelete('comics', ctxTarget);
+  await dbDelete('files',  ctxTarget);
+  library = library.filter(x=>x.id!==ctxTarget);
+  if(c.thumb) URL.revokeObjectURL(c.thumb);
+  renderLibrary();
+  toast('Eliminado');
+};
+
+// ── ADD FILES ──
+document.getElementById('add-fab').onclick = () => document.getElementById('file-input').click();
+document.getElementById('file-input').onchange = async e => {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  showLoading(`Importando 0/${files.length}…`);
+  for (let i=0; i<files.length; i++) {
+    document.getElementById('loading-text').textContent = `Importando ${i+1}/${files.length}…`;
+    await importFile(files[i]);
+  }
+  e.target.value='';
+  hideLoading();
+  renderLibrary();
+  toast(`${files.length} cómic${files.length!==1?'s':''} agregado${files.length!==1?'s':''}`);
+};
+
+async function importFile(file) {
+  const id = Date.now() + Math.random().toString(36).slice(2);
+  const ext = file.name.split('.').pop().toLowerCase();
+  const format = ext === 'pdf' ? 'pdf' : 'cbx';
+  const buf = await file.arrayBuffer();
+
+  let pages = 0;
+  let thumb = null;
+
+  try {
+    if (format === 'pdf') {
+      const pdf = await pdfjsLib.getDocument({data: new Uint8Array(buf)}).promise;
+      pages = pdf.numPages;
+      thumb = await renderPDFThumb(pdf, 1);
+      pdf.destroy();
+    } else {
+      const zip = await JSZip.loadAsync(buf);
+      const imgs = getImageEntries(zip);
+      pages = imgs.length;
+      if (imgs.length) thumb = await renderZIPThumb(zip, imgs[0]);
+    }
+  } catch(err) {
+    console.warn('Import warn:', err);
+  }
+
+  const comic = {
+    id,
+    name: file.name.replace(/\.[^.]+$/, ''),
+    format,
+    ext,
+    size: file.size,
+    pages,
+    thumb,
+    currentPage: 0,
+    dateAdded: Date.now()
+  };
+
+  await dbPut('comics', comic);
+  await dbPut('files', { id, data: buf });
+  library.push(comic);
+}
+
+function getImageEntries(zip) {
+  return Object.values(zip.files)
+    .filter(f => !f.dir && /\.(jpe?g|png|webp|gif|bmp|avif)$/i.test(f.name))
+    .sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric:true}));
+}
+
+async function renderPDFThumb(pdf, pageNum) {
+  const page = await pdf.getPage(pageNum);
+  const vp = page.getViewport({scale:0.3});
+  const canvas = document.createElement('canvas');
+  canvas.width = vp.width; canvas.height = vp.height;
+  await page.render({canvasContext: canvas.getContext('2d'), viewport: vp}).promise;
+  return canvas.toDataURL('image/jpeg', 0.7);
+}
+
+async function renderZIPThumb(zip, entry) {
+  const blob = await entry.async('blob');
+  return new Promise(res => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const scale = Math.min(200/img.width, 300/img.height);
+      canvas.width  = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      res(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); res(null); };
+    img.src = url;
+  });
+}
+
+// ── OPEN COMIC ──
+async function openComic(id) {
+  const comic = library.find(c => c.id === id);
+  if (!comic) return;
+  showLoading('Abriendo…');
+
+  try {
+    const fileRec = await dbGet('files', id);
+    if (!fileRec) { toast('Archivo no encontrado'); hideLoading(); return; }
+
+    currentComic = comic;
+    readerPages  = [];
+    pdfDoc       = null;
+
+    if (comic.format === 'pdf') {
+      pdfDoc = await pdfjsLib.getDocument({data: new Uint8Array(fileRec.data)}).promise;
+      totalPages = pdfDoc.numPages;
+    } else {
+      const zip = await JSZip.loadAsync(fileRec.data);
+      const imgs = getImageEntries(zip);
+      totalPages = imgs.length;
+      // Preload blobs lazily — store zip entries
+      readerPages = imgs;
+    }
+
+    currentPage = Math.min(comic.currentPage || 0, totalPages - 1);
+    if (currentPage < 0) currentPage = 0;
+
+    showScreen('reader-screen');
+    document.getElementById('reader-title').textContent = comic.name;
+    document.getElementById('page-slider').max = totalPages - 1;
+    document.getElementById('page-slider').value = currentPage;
+
+    await renderPage(currentPage);
+    hideLoading();
+  } catch(err) {
+    hideLoading();
+    toast('Error al abrir el cómic');
+    console.error(err);
+  }
+}
+
+// ── RENDER PAGE ──
+let renderToken = 0;
+async function renderPage(pageIndex) {
+  const token = ++renderToken;
+  updateCounter();
+
+  const canvas  = document.getElementById('page-canvas');
+  const ctx     = canvas.getContext('2d');
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  if (pdfDoc) {
+    // PDF
+    const page = await pdfDoc.getPage(pageIndex + 1);
+    if (token !== renderToken) return;
+    const vpBase = page.getViewport({scale:1});
+    const scale  = Math.min(vw / vpBase.width, vh / vpBase.height) * window.devicePixelRatio;
+    const vp     = page.getViewport({scale});
+    canvas.width  = vp.width;
+    canvas.height = vp.height;
+    canvas.style.width  = (vp.width  / window.devicePixelRatio) + 'px';
+    canvas.style.height = (vp.height / window.devicePixelRatio) + 'px';
+    await page.render({canvasContext: ctx, viewport: vp}).promise;
+  } else {
+    // ZIP/CBR image
+    const entry = readerPages[pageIndex];
+    const blob  = await entry.async('blob');
+    if (token !== renderToken) { URL.revokeObjectURL(URL.createObjectURL(blob)); return; }
+    const url   = URL.createObjectURL(blob);
+    await new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(vw / img.naturalWidth, vh / img.naturalHeight) * window.devicePixelRatio;
+        canvas.width  = img.naturalWidth  * scale;
+        canvas.height = img.naturalHeight * scale;
+        canvas.style.width  = (canvas.width  / window.devicePixelRatio) + 'px';
+        canvas.style.height = (canvas.height / window.devicePixelRatio) + 'px';
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        res();
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); rej(); };
+      img.src = url;
+    });
+  }
+
+  document.getElementById('page-slider').value = pageIndex;
+  saveProgress();
+}
+
+function updateCounter() {
+  document.getElementById('page-counter').textContent = `${currentPage+1} / ${totalPages}`;
+}
+
+async function goPage(delta) {
+  const next = currentPage + delta;
+  if (next < 0 || next >= totalPages) return;
+  currentPage = next;
+  await renderPage(currentPage);
+}
+
+// ── SAVE PROGRESS ──
+async function saveProgress() {
+  if (!currentComic) return;
+  currentComic.currentPage = currentPage;
+  await dbPut('comics', currentComic);
+  const idx = library.findIndex(c => c.id === currentComic.id);
+  if (idx >= 0) library[idx] = currentComic;
+}
+
+// ── READER CONTROLS ──
+document.getElementById('back-btn').onclick = async () => {
+  await saveProgress();
+  pdfDoc = null;
+  readerPages = [];
+  showScreen('library-screen');
+  renderLibrary();
+};
+
+document.getElementById('page-slider').oninput = async e => {
+  const val = parseInt(e.target.value);
+  if (val !== currentPage) {
+    currentPage = val;
+    await renderPage(currentPage);
+  }
+};
+
+// Tap navigation
+document.getElementById('tap-left').onclick   = () => goPage(-1);
+document.getElementById('tap-right').onclick  = () => goPage(1);
+document.getElementById('tap-center').onclick = toggleBars;
+
+// Touch swipe
+let touchStartX = 0, touchStartY = 0;
+const vp = document.getElementById('reader-viewport');
+
+vp.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, {passive:true});
+
+vp.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+    dx < 0 ? goPage(1) : goPage(-1);
+  }
+}, {passive:true});
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (document.getElementById('reader-screen').classList.contains('active')) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goPage(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goPage(-1);
+    if (e.key === 'Escape') document.getElementById('back-btn').click();
+  }
+});
+
+function toggleBars() {
+  barsVisible = !barsVisible;
+  document.getElementById('reader-topbar').classList.toggle('hidden', !barsVisible);
+  document.getElementById('reader-bottombar').classList.toggle('hidden', !barsVisible);
+  if (barsVisible) {
+    clearTimeout(barsTimer);
+    barsTimer = setTimeout(() => {
+      barsVisible = false;
+      document.getElementById('reader-topbar').classList.add('hidden');
+      document.getElementById('reader-bottombar').classList.add('hidden');
+    }, 3000);
+  }
+}
+
+// ── SORT ──
+document.getElementById('sort-btn').onclick = () => {
+  const modes = ['dateAdded','name','progress'];
+  const labels = ['Reciente','Nombre','Progreso'];
+  const idx = modes.indexOf(sortMode);
+  sortMode = modes[(idx+1) % modes.length];
+  toast(`Orden: ${labels[(idx+1) % modes.length]}`);
+  renderLibrary();
+};
+
+// ── SEARCH ──
+document.getElementById('search-btn').onclick = () => {
+  const q = prompt('Buscar cómic:')?.toLowerCase().trim();
+  if (!q) { renderLibrary(); return; }
+  const filtered = library.filter(c => c.name.toLowerCase().includes(q));
+  const saved = library;
+  library = filtered;
+  renderLibrary();
+  library = saved;
+  toast(`${filtered.length} resultado${filtered.length!==1?'s':''}`);
+};
+
+// ── HELPERS ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showLoading(msg='Cargando…') {
+  document.getElementById('loading-text').textContent = msg;
+  document.getElementById('loading').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loading').classList.remove('show');
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// Prevent pull-to-refresh in reader
+document.getElementById('reader-screen').addEventListener('touchmove', e => {
+  if (e.touches.length === 1) e.preventDefault();
+}, {passive:false});
+
+// ── DRAG & DROP ──
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', async e => {
+  e.preventDefault();
+  const files = Array.from(e.dataTransfer.files).filter(f =>
+    /\.(cbr|cbz|cb7|pdf|zip|rar)$/i.test(f.name));
+  if (!files.length) return;
+  showLoading(`Importando…`);
+  for (const f of files) await importFile(f);
+  hideLoading();
+  renderLibrary();
+  toast(`${files.length} agregado${files.length!==1?'s':''}`);
+});
+
+// ── GOOGLE DRIVE IMPORT ──
+document.getElementById('drive-btn').onclick = () => {
+  document.getElementById('drive-url').value = '';
+  document.getElementById('drive-modal').classList.add('show');
+};
+document.getElementById('drive-cancel').onclick = () => {
+  document.getElementById('drive-modal').classList.remove('show');
+};
+document.getElementById('drive-modal').onclick = e => {
+  if (e.target === document.getElementById('drive-modal'))
+    document.getElementById('drive-modal').classList.remove('show');
+};
+
+document.getElementById('drive-import-btn').onclick = async () => {
+  const raw = document.getElementById('drive-url').value.trim();
+  if (!raw) return;
+
+  const fileId = extractDriveId(raw);
+  if (!fileId) { toast('URL de Drive no válida'); return; }
+
+  document.getElementById('drive-modal').classList.remove('show');
+  showLoading('Descargando desde Drive…');
+
+  try {
+    // Use the direct download URL
+    const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+    const res = await fetch(downloadUrl);
+    if (!res.ok) throw new Error('No se pudo descargar');
+
+    const contentDisp = res.headers.get('content-disposition') || '';
+    let filename = 'comic_drive';
+    const match = contentDisp.match(/filename[^;=\n]*=(['"]?)([^'"\n]*)\1/);
+    if (match) filename = match[2];
+    else filename = `drive_${fileId.slice(0,8)}`;
+
+    const buf = await res.arrayBuffer();
+    const ext = filename.split('.').pop().toLowerCase();
+
+    // Create a fake File-like object
+    const fakeFile = new File([buf], filename.includes('.') ? filename : filename + '.cbz',
+      {type: ext === 'pdf' ? 'application/pdf' : 'application/zip'});
+
+    await importFile(fakeFile);
+    hideLoading();
+    renderLibrary();
+    toast('Importado desde Drive ✓');
+  } catch(err) {
+    hideLoading();
+    toast('Error: activa "Cualquiera con enlace" en Drive');
+    console.error(err);
+  }
+};
+
+function extractDriveId(url) {
+  // Formats: /file/d/ID/view  or  ?id=ID  or  id=ID
+  let m = url.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/);
+  if (m) return m[1];
+  m = url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+  if (m) return m[1];
+  // Raw ID (user pastes just the ID)
+  if (/^[a-zA-Z0-9_-]{25,}$/.test(url)) return url;
+  return null;
+}
+
+// ── SERVICE WORKER (offline) ──
+if ('serviceWorker' in navigator) {
+  const swCode = `
+const CACHE = 'comicteca-v1';
+const ASSETS = [
+  self.location.pathname,
+  'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap',
+  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(()=>{})));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys =>
+    Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))
+  ));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        if (res && res.status===200 && res.type!=='opaque') {
+          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+        }
+        return res;
+      }).catch(() => cached || new Response('Sin conexion',{status:503}));
+    })
+  );
+});
+`;
+  const blob = new Blob([swCode], {type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+}
+
+</script>
+</body>
+</html>
