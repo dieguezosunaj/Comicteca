@@ -2,7 +2,7 @@
   "name": "Comicteca",
   "short_name": "Comicteca",
   "description": "Tu biblioteca de cómics personal",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0a0a0f",
