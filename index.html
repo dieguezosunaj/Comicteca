@@ -507,6 +507,12 @@ body {
 <div class="loading-overlay" id="loading">
   <div class="spinner"></div>
   <div class="loading-text" id="loading-text">Procesando…</div>
+  <div id="progress-wrap" style="display:none;width:220px;margin-top:4px;">
+    <div style="background:#ffffff15;border-radius:4px;height:6px;overflow:hidden;">
+      <div id="progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width .2s;"></div>
+    </div>
+    <div id="progress-label" style="color:var(--text-dim);font-size:12px;text-align:center;margin-top:6px;"></div>
+  </div>
 </div>
 
 <!-- Toast -->
@@ -708,12 +714,14 @@ document.getElementById('add-fab').onclick = () => document.getElementById('file
 document.getElementById('file-input').onchange = async e => {
   const files = Array.from(e.target.files);
   if (!files.length) return;
-  showLoading(`Importando 0/${files.length}…`);
+  showLoading(`Importando…`);
+  showProgress(0, '');
   for (let i=0; i<files.length; i++) {
-    document.getElementById('loading-text').textContent = `Importando ${i+1}/${files.length}…`;
+    document.getElementById('loading-text').textContent = `Importando ${i+1} de ${files.length}`;
     await importFile(files[i]);
   }
   e.target.value='';
+  hideProgress();
   hideLoading();
   renderLibrary();
   toast(`${files.length} cómic${files.length!==1?'s':''} agregado${files.length!==1?'s':''}`);
@@ -723,11 +731,15 @@ async function importFile(file) {
   const id = Date.now() + Math.random().toString(36).slice(2);
   const ext = file.name.split('.').pop().toLowerCase();
   const format = ext === 'pdf' ? 'pdf' : 'cbx';
-  const buf = await file.arrayBuffer();
+
+  // Read file with progress
+  showProgress(0, 'Leyendo archivo…');
+  const buf = await readFileWithProgress(file);
 
   let pages = 0;
   let thumb = null;
 
+  showProgress(40, 'Extrayendo portada…');
   try {
     if (format === 'pdf') {
       const pdf = await pdfjsLib.getDocument({data: new Uint8Array(buf)}).promise;
@@ -735,7 +747,6 @@ async function importFile(file) {
       thumb = await renderPDFThumb(pdf, 1);
       pdf.destroy();
     } else {
-      // Only load first entry for thumbnail — skip full decompression
       const zip = await JSZip.loadAsync(buf, {optimizedBinaryString: true});
       const imgs = getImageEntries(zip);
       pages = imgs.length;
@@ -745,21 +756,46 @@ async function importFile(file) {
     console.warn('Import warn:', err);
   }
 
+  showProgress(80, 'Guardando…');
   const comic = {
     id,
     name: file.name.replace(/\.[^.]+$/, ''),
-    format,
-    ext,
+    format, ext,
     size: file.size,
-    pages,
-    thumb,
+    pages, thumb,
     currentPage: 0,
     dateAdded: Date.now()
   };
-
   await dbPut('comics', comic);
+  showProgress(90, 'Guardando archivo…');
   await dbPut('files', { id, data: buf });
+  showProgress(100, '¡Listo!');
   library.push(comic);
+}
+
+function readFileWithProgress(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onprogress = e => {
+      if (e.lengthComputable) {
+        const pct = Math.round(e.loaded / e.total * 35);
+        showProgress(pct, `Leyendo… ${(e.loaded/1024/1024).toFixed(1)}MB`);
+      }
+    };
+    reader.onload = e => res(e.target.result);
+    reader.onerror = () => rej(reader.error);
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function showProgress(pct, label) {
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = label;
+}
+function hideProgress() {
+  document.getElementById('progress-wrap').style.display = 'none';
+  document.getElementById('progress-bar').style.width = '0%';
 }
 
 function getImageEntries(zip) {
