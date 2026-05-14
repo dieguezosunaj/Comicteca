@@ -516,12 +516,15 @@ body {
 <div class="modal-overlay" id="drive-modal">
   <div class="modal-sheet">
     <div class="modal-title">📁 Importar desde Drive</div>
-    <div class="modal-sub">Pega el enlace de Google Drive de tu cómic (CBZ, PDF, ZIP).</div>
+    <div class="modal-sub">Descarga el archivo desde Drive y luego impórtalo aquí.</div>
     <div class="drive-hint">
-      En Drive: clic derecho en el archivo → <b>Compartir</b> → <b>Cualquiera con el enlace</b> → copiar URL
+      1. Toca <b>Abrir Drive</b> — se abre en Safari<br>
+      2. Busca tu cómic (CBZ, PDF, ZIP)<br>
+      3. Toca los <b>3 puntos</b> → <b>Abrir en…</b> → <b>Descargar</b><br>
+      4. Regresa aquí y toca <b>Importar archivo</b>
     </div>
-    <input class="drive-input" id="drive-url" type="url" placeholder="https://drive.google.com/file/d/…">
-    <button class="modal-btn" id="drive-import-btn">IMPORTAR</button>
+    <button class="modal-btn" id="drive-open-btn">🔗 ABRIR GOOGLE DRIVE</button>
+    <button class="modal-btn" id="drive-file-btn" style="background:var(--surface2);color:var(--text);margin-top:4px;">📂 IMPORTAR ARCHIVO</button>
     <button class="modal-cancel" id="drive-cancel">Cancelar</button>
   </div>
 </div>
@@ -1032,7 +1035,6 @@ document.addEventListener('drop', async e => {
 
 // ── GOOGLE DRIVE IMPORT ──
 document.getElementById('drive-btn').onclick = () => {
-  document.getElementById('drive-url').value = '';
   document.getElementById('drive-modal').classList.add('show');
 };
 document.getElementById('drive-cancel').onclick = () => {
@@ -1042,57 +1044,13 @@ document.getElementById('drive-modal').onclick = e => {
   if (e.target === document.getElementById('drive-modal'))
     document.getElementById('drive-modal').classList.remove('show');
 };
-
-document.getElementById('drive-import-btn').onclick = async () => {
-  const raw = document.getElementById('drive-url').value.trim();
-  if (!raw) return;
-
-  const fileId = extractDriveId(raw);
-  if (!fileId) { toast('URL de Drive no válida'); return; }
-
-  document.getElementById('drive-modal').classList.remove('show');
-  showLoading('Descargando desde Drive…');
-
-  try {
-    // Use the direct download URL
-    const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-    const res = await fetch(downloadUrl);
-    if (!res.ok) throw new Error('No se pudo descargar');
-
-    const contentDisp = res.headers.get('content-disposition') || '';
-    let filename = 'comic_drive';
-    const match = contentDisp.match(/filename[^;=\n]*=(['"]?)([^'"\n]*)\1/);
-    if (match) filename = match[2];
-    else filename = `drive_${fileId.slice(0,8)}`;
-
-    const buf = await res.arrayBuffer();
-    const ext = filename.split('.').pop().toLowerCase();
-
-    // Create a fake File-like object
-    const fakeFile = new File([buf], filename.includes('.') ? filename : filename + '.cbz',
-      {type: ext === 'pdf' ? 'application/pdf' : 'application/zip'});
-
-    await importFile(fakeFile);
-    hideLoading();
-    renderLibrary();
-    toast('Importado desde Drive ✓');
-  } catch(err) {
-    hideLoading();
-    toast('Error: activa "Cualquiera con enlace" en Drive');
-    console.error(err);
-  }
+document.getElementById('drive-open-btn').onclick = () => {
+  window.open('https://drive.google.com', '_blank');
 };
-
-function extractDriveId(url) {
-  // Formats: /file/d/ID/view  or  ?id=ID  or  id=ID
-  let m = url.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/);
-  if (m) return m[1];
-  m = url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
-  if (m) return m[1];
-  // Raw ID (user pastes just the ID)
-  if (/^[a-zA-Z0-9_-]{25,}$/.test(url)) return url;
-  return null;
-}
+document.getElementById('drive-file-btn').onclick = () => {
+  document.getElementById('drive-modal').classList.remove('show');
+  document.getElementById('file-input').click();
+};
 
 // ── SERVICE WORKER (offline) ──
 if ('serviceWorker' in navigator) {
