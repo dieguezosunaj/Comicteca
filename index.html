@@ -735,7 +735,8 @@ async function importFile(file) {
       thumb = await renderPDFThumb(pdf, 1);
       pdf.destroy();
     } else {
-      const zip = await JSZip.loadAsync(buf);
+      // Only load first entry for thumbnail — skip full decompression
+      const zip = await JSZip.loadAsync(buf, {optimizedBinaryString: true});
       const imgs = getImageEntries(zip);
       pages = imgs.length;
       if (imgs.length) thumb = await renderZIPThumb(zip, imgs[0]);
@@ -783,12 +784,12 @@ async function renderZIPThumb(zip, entry) {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const scale = Math.min(200/img.width, 300/img.height);
+      const scale = Math.min(120/img.width, 180/img.height);
       canvas.width  = img.width * scale;
       canvas.height = img.height * scale;
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(url);
-      res(canvas.toDataURL('image/jpeg', 0.7));
+      res(canvas.toDataURL('image/jpeg', 0.5));
     };
     img.onerror = () => { URL.revokeObjectURL(url); res(null); };
     img.src = url;
